@@ -1,6 +1,9 @@
 <script lang='ts'>
     import * as FlexSearch from '@akryum/flexsearch-es'
 
+    let words: string[] = [];
+    let result: string[] = [];
+
     const NO_JONGSUNG = ''
 
     const CHOSUNGS = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ',
@@ -24,7 +27,7 @@
 
     const cho_joong_jong_tokenizer = function(str: string) {
         const result: string[] = []
-        ;([...str]).forEach(char => {
+        ;([...(str.toLowerCase())]).forEach(char => {
             const unicode = charToUnicode(char)
             if (unicode === null) return
             if (unicode < FIRST_HANGUL || unicode > LAST_HANGUL)
@@ -46,26 +49,42 @@
         return result
     }
 
-    console.log(cho_joong_jong_tokenizer("John Doe").join(''))
-    console.log(cho_joong_jong_tokenizer("한글").join(''))
-    console.log(cho_joong_jong_tokenizer("ㄱ 오란다 뎌쉐 큵").join(''))
+    // console.log(cho_joong_jong_tokenizer("John Doe").join(''))
+    // console.log(cho_joong_jong_tokenizer("한글").join(''))
+    // console.log(cho_joong_jong_tokenizer("ㄱ 오란다 뎌쉐 큵").join(''))
 
     const index = FlexSearch.create({
         tokenize: 'forward',
-        resolution: 5,
-        encode: cho_joong_jong_tokenizer
+        encode: cho_joong_jong_tokenizer,
     });
-
+    
+    words.push("John Doe")
     index.add(0, "John Doe");
+    words.push("John rice")
     index.add(1, "John rice");
+    words.push("한글")
     index.add(2, "한글");
-    index.add(3, "John cape");
+    words.push("carpe diem")
+    index.add(3, "carpe diem");
+    words.push("한 글")
     index.add(4, "한 글");
+    words.push("고하자")
     index.add(5, "고하자");
     
-    index.search("하").forEach(id => console.log(id));
-    const a = "hel"
+    function add(input: EventTarget & HTMLInputElement) {
+        const value = input.value?.trim()
+        // console.log(value)
+        if (!value) return
+        const lastIndex = words.length
+		words = [...words, value]
+        index.add(lastIndex, value)
+		input.value = '';
+	}
 
+    function search(value: string) {
+        result = index.search(value).map(id => words[Number(id)])
+        // console.log(result)
+    }
 </script>
 
 <svelte:head>
@@ -74,7 +93,23 @@
 </svelte:head>
 
 <section>
-	<h1>
-		{a}
-	</h1>
+    <input
+        on:keydown={(event) => event.key === 'Enter' && !event.isComposing && add(event.currentTarget)}
+        placeholder="insert word"
+    />
+    <ol>
+        {#each words as word}
+            <li>{word}</li>
+        {/each}
+    </ol>
+    <input
+        on:input={(event) => search(event.currentTarget.value)} 
+        placeholder="input to search"
+    />
+    <h2>Search Result</h2>
+    <ol>
+        {#each result as word}
+            <li>{word}</li>
+        {/each}
+    </ol>
 </section>
